@@ -1,6 +1,6 @@
 {
   "name": "geppetto",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/taterbase/geppetto"
@@ -22,7 +22,7 @@
   "license": "MIT",
   "preferGlobal": "true",
   "bin": {
-    "gepetto": "bin/geppetto"
+    "geppetto": "bin/geppetto"
   },
   "dependencies": {
     "colors": "^0.6.2"
