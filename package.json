@@ -1,0 +1,33 @@
+{
+  "name": "geppetto",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taterbase/geppetto"
+  },
+  "description": "SOA local development made easy. Run multiple processes with defined and common ENV's",
+  "keywords": [
+    "soa",
+    "geppetto",
+    "puppet",
+    "services",
+    "local",
+    "dev"
+  ],
+  "main": "bin/geppetto",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha"
+  },
+  "author": "taterbase",
+  "license": "MIT",
+  "preferGlobal": "true",
+  "bin": {
+    "gepetto": "bin/geppetto"
+  },
+  "dependencies": {
+    "lodash": "^2.4.1"
+  },
+  "devDependencies": {
+    "mocha": "^1.18.2"
+  }
+}

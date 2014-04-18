@@ -1,0 +1,23 @@
+{
+  "_env": "These are default environment variables, these will get passed to each command unless overriden in that command",
+  "_env": {
+    "RANDOM_VAR": "wheaties_box"
+  },
+  "echo": {
+    "dir": "This is the directory you want the command called in",
+    "dir": "../test",
+
+    "command": "This is the command that will be used to launch the process",
+    "command": "echo",
+
+    "arguments": "Arguments to pass to the command",
+    "arguments": [ "mom" ]
+  },
+  "env vars": {
+    "command": "env",
+    "env": "This is an environment which is scoped only to this process",
+    "env": {
+      "OTHER_RANDOM_VAR": "cookies"
+    }
+  }
+}
