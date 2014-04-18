@@ -10,11 +10,6 @@ function Geppetto() {
   var filename = process.argv[2]
     , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
 
-  lift(config)
-}
-
-function lift(config) {
-
   if (config._env) {
     merge(defaultEnv, config._env)
     delete config._env
@@ -32,22 +27,55 @@ function lift(config) {
     var cmd = proc.command
       , env = merge(proc.env || {}, defaultEnv)
       , dir = proc.dir || firstDir
+      , git = proc.git
       , args = proc.arguments || []
       , dataLogger = createLogger(proc.key)
       , errLog = createErrLogger(proc.key)
       , exitLog = createExitLogger(proc.key)
 
-    process.chdir(dir)
+    if (dir === firstDir && git)
+      fetchWithGit(function(newDir) {
+        process.chdir(newDir)
+        start()
+      })
+    else {
+      process.chdir(dir)
+      start()
+    }
 
-    var action = spawn(cmd, args, {env: env})
+    function fetchWithGit(cb) {
+      var gitUrlFragments = git.split('/')
+        , repoName = gitUrlFragments[gitUrlFragments.length - 1].replace(/.git$/, '')
+        , action = spawn('git', ['clone', git, repoName])
 
-    action.stdout.setEncoding('utf8')
-    action.stderr.setEncoding('utf8')
+      action.stdout.setEncoding('utf8')
+      action.stderr.setEncoding('utf8')
 
-    action.stdout.on('data', dataLogger)
-    action.stderr.on('data', errLog)
+      action.stdout.on('data', dataLogger)
+      action.stderr.on('data', errLog)
 
-    action.on('close', exitLog)
+      action.on('close', function(exitCode) {
+        if (exitCode !== 0)
+          return console.log("Exited with an error: ", exitCode)
+
+        proc.dir = firstDir + '/' + repoName
+        fs.writeFileSync(filename, JSON.stringify(config, null, 2))
+        cb(proc.dir)
+      })
+    }
+
+    function start() {
+      var action = spawn(cmd, args, {env: env})
+
+      action.stdout.setEncoding('utf8')
+      action.stderr.setEncoding('utf8')
+
+      action.stdout.on('data', dataLogger)
+      action.stderr.on('data', errLog)
+
+      action.on('close', exitLog)
+      action.on('error', errLog)
+    }
   })
 }
 

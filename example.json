@@ -5,7 +5,7 @@
   },
   "echo": {
     "dir": "This is the directory you want the command called in",
-    "dir": "../test",
+    "dir": "./test",
 
     "command": "This is the command that will be used to launch the process",
     "command": "echo",
