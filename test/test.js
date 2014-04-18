@@ -59,7 +59,7 @@ describe('Geppetto', function() {
 
   })
 
-  afterEach(function(done) {
+  after(function(done) {
     rimraf.sync('./cool-ascii-faces')
     fs.writeFileSync(gitJSONPath, originalGitConfig)
     done()

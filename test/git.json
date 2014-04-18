@@ -1,5 +1,5 @@
 {
-  "Ascii-faces": {
+  "cool-ascii-faces": {
     "command": "echo",
     "arguments": ["whatsup"],
     "git": "https://github.com/maxogden/cool-ascii-faces"

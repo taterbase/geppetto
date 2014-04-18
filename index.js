@@ -33,7 +33,7 @@ function Geppetto() {
       , errLog = createErrLogger(proc.key)
       , exitLog = createExitLogger(proc.key)
 
-    if (dir === firstDir && git)
+    if (dir === firstDir && git && !fs.existsSync(getLocalRepo(firstDir, proc.key)))
       fetchWithGit(function(newDir) {
         process.chdir(newDir)
         start()
@@ -44,9 +44,7 @@ function Geppetto() {
     }
 
     function fetchWithGit(cb) {
-      var gitUrlFragments = git.split('/')
-        , repoName = gitUrlFragments[gitUrlFragments.length - 1].replace(/.git$/, '')
-        , action = spawn('git', ['clone', git, repoName])
+      var action = spawn('git', ['clone', git, proc.key])
 
       action.stdout.setEncoding('utf8')
       action.stderr.setEncoding('utf8')
@@ -58,8 +56,7 @@ function Geppetto() {
         if (exitCode !== 0)
           return console.log("Exited with an error: ", exitCode)
 
-        proc.dir = firstDir + '/' + repoName
-        fs.writeFileSync(filename, JSON.stringify(config, null, 2))
+        proc.dir = getLocalRepo(firstDir, proc.key)
         cb(proc.dir)
       })
     }
@@ -103,4 +100,8 @@ function merge(dest, src) {
       dest[key] = src[key]
   }
   return dest
+}
+
+function getLocalRepo(prefix, repoName) {
+  return prefix + '/' + repoName
 }
