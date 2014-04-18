@@ -10,6 +10,8 @@ Geppetto makes it simple to script the launch of all your local services with th
 
 ##Usage
 
+`geppetto config.json`
+
 Define a json configuration file with the processes that you want running. You can define a:
 - dir (the directory you want the process to be launched from)
 - command (the command being called to launch the process)
@@ -41,4 +43,3 @@ There is also a top level key `_env` that can be used to set common environment 
 }
 ```
 
-Then gust run `geppetto config.json`
