@@ -50,7 +50,7 @@ Define a json configuration file with the processes that you want running. You c
 There are also top level keys that can be defined to set global commone options:
 
 - `_dir` Prefix directory string, used in conjuction with each service's key in the config (overriden by `dir` key)
-```javascript
+```json
 {
   "_dir": "/Users/taterbase/projects/",
   "game": {"command": "cat", "arguments": ["index.js"]}
@@ -59,7 +59,7 @@ There are also top level keys that can be defined to set global commone options:
 ```
 
 - `_env` Commen environment variables for each service
-```javascript
+```json
 {
   "_env": {"LEVEL": "1", "BOSS": "SnapBack"},
   "game": {"command": "cat", "arguments": ["index.js"], "env": {"LEVEL": "2"}}
