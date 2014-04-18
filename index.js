@@ -3,7 +3,6 @@ var fs = require('fs')
   , firstDir = process.cwd()
   , spawn = require('child_process').spawn
   , colors = require('colors')
-  , _ = require('lodash')
 
 module.exports = Geppetto
 
@@ -15,8 +14,9 @@ function Geppetto() {
 }
 
 function lift(config) {
+
   if (config._env) {
-    _.merge(defaultEnv, config._env)
+    merge(defaultEnv, config._env)
     delete config._env
   }
 
@@ -30,7 +30,7 @@ function lift(config) {
     return proc
   }).forEach(function(proc) {
     var cmd = proc.command
-      , env = _.merge(proc.env || {}, defaultEnv)
+      , env = merge(proc.env || {}, defaultEnv)
       , dir = proc.dir || firstDir
       , args = proc.arguments || []
       , dataLogger = createLogger(proc.key)
@@ -67,4 +67,12 @@ function createExitLogger(name) {
   return function(exitcode) {
     console.log((name + ': ').yellow + 'EXITED', exitcode)
   }
+}
+
+function merge(dest, src) {
+  for (var key in src) {
+    if (src.hasOwnProperty(key))
+      dest[key] = src[key]
+  }
+  return dest
 }
