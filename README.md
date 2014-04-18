@@ -40,3 +40,5 @@ There is also a top level key `_env` that can be used to set common environment 
   }
 }
 ```
+
+Then gust run `geppetto config.json`
