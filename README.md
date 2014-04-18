@@ -5,9 +5,9 @@
 Geppetto makes it simple to script the launch of all your local services with the desired environment variables
 
 ##Contents
-- [Installation]
-- [Usage]
-	- [Common Globals]
+- [Installation](#installation)
+- [Usage](#usage)
+	- [Common Globals](#common-globals)
 
 ##Installation
 
