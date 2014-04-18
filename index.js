@@ -26,14 +26,14 @@ function Geppetto() {
   }).forEach(function(proc) {
     var cmd = proc.command
       , env = merge(proc.env || {}, defaultEnv)
-      , dir = proc.dir || firstDir
       , git = proc.git
+      , dir = proc.dir || (git ? getLocalRepo(firstDir, proc.key) : firstDir)
       , args = proc.arguments || []
       , dataLogger = createLogger(proc.key)
       , errLog = createErrLogger(proc.key)
       , exitLog = createExitLogger(proc.key)
 
-    if (dir === firstDir && git && !fs.existsSync(getLocalRepo(firstDir, proc.key)))
+    if (git && !fs.existsSync(dir))
       fetchWithGit(function(newDir) {
         process.chdir(newDir)
         start()
