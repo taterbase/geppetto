@@ -9,9 +9,11 @@ var spawn = require('child_process').spawn
 
 describe('Geppetto', function() {
 
+  this.timeout(10000)
+
   it('should perform actions listed in example.json', function(done) {
 
-    var proc = _spawn(exampleJSONPath, done)
+    var proc = _spawn(exampleJSONPath)
 
     proc.stdout.on('data', function(data) {
       if(data.match(/(RANDOM_VAR=wheaties_box|OTHER_RANDOM_VAR=cookies|mom)/)) {
@@ -31,7 +33,7 @@ describe('Geppetto', function() {
   })
 
   it('should be able to clone missing services if git field available', function(done) {
-    var proc = _spawn(gitJSONPath, done)
+    var proc = _spawn(gitJSONPath)
     proc.stdout.on('data', console.log)
     proc.stderr.on('data', function(data) {
       return done(new Error(data))
@@ -46,11 +48,15 @@ describe('Geppetto', function() {
 
   })
 
-  it('should still run command after cloneing git', function(done) {
-    var proc = _spawn(gitJSONPath, done)
+  it('should still run command after cloning git', function(done) {
+    var proc = _spawn(gitJSONPath)
+      , finished = false
+
     proc.stdout.on('data', function(data) {
-      if (data.match(/whatsup/))
+      if (data.match(/whatsup/) && !finished) {
         done()
+        finished = true
+      }
     })
 
     proc.stderr.on('data', function(data) {
@@ -59,7 +65,19 @@ describe('Geppetto', function() {
 
   })
 
-  after(function(done) {
+  it ('should run postgit command if available', function(done){
+    var proc = _spawn(gitJSONPath)
+    proc.on('close', function() {
+      setTimeout(function() {
+        if (fs.existsSync('./cool-ascii-faces/node_modules'))
+          done()
+        else
+          done(new Error("postgit not run, node_modules not present"))
+      }, 3000)
+    })
+  })
+
+  afterEach(function(done) {
     rimraf.sync('./cool-ascii-faces')
     fs.writeFileSync(gitJSONPath, originalGitConfig)
     done()
@@ -67,7 +85,7 @@ describe('Geppetto', function() {
 
 })
 
-function _spawn(filedir, done) {
+function _spawn(filedir) {
   var proc = spawn('./bin/geppetto', [filedir])
 
   proc.stdout.setEncoding('utf8')

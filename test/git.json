@@ -2,6 +2,10 @@
   "cool-ascii-faces": {
     "command": "echo",
     "arguments": ["whatsup"],
-    "git": "https://github.com/maxogden/cool-ascii-faces"
+    "git": "https://github.com/maxogden/cool-ascii-faces",
+    "postgit": {
+      "command": "npm",
+      "arguments": ["install"]
+    }
   }
 }

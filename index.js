@@ -25,56 +25,42 @@ function Geppetto() {
     return proc
   }).forEach(function(proc) {
     var cmd = proc.command
-      , env = merge(proc.env || {}, defaultEnv)
+      , env = merge((proc.env || {}), defaultEnv)
       , git = proc.git
+      , postgit = proc.postgit
       , dir = proc.dir || (git ? getLocalRepo(firstDir, proc.key) : firstDir)
       , args = proc.arguments || []
       , dataLogger = createLogger(proc.key)
       , errLog = createErrLogger(proc.key)
       , exitLog = createExitLogger(proc.key)
+      , action = new Action(proc.key)
 
-    if (git && !fs.existsSync(dir))
-      fetchWithGit(function(newDir) {
-        process.chdir(newDir)
-        start()
-      })
-    else {
-      process.chdir(dir)
-      start()
-    }
 
-    function fetchWithGit(cb) {
-      var action = spawn('git', ['clone', git, proc.key])
+    if (git && !fs.existsSync(dir)){
+      action.do(fetchGit(git, proc.key))
+      if (postgit) {
+        action.do({
+          dir: dir
+        , cmd: postgit.command
+        , args: postgit.arguments || []
+        , env: merge((postgit.env || {}), defaultEnv)
+        })
+      }
+    } 
 
-      action.stdout.setEncoding('utf8')
-      action.stderr.setEncoding('utf8')
-
-      action.stdout.on('data', dataLogger)
-      action.stderr.on('data', errLog)
-
-      action.on('close', function(exitCode) {
-        if (exitCode !== 0)
-          return console.log("Exited with an error: ", exitCode)
-
-        proc.dir = getLocalRepo(firstDir, proc.key)
-        cb(proc.dir)
-      })
-    }
-
-    function start() {
-      var action = spawn(cmd, args, {env: env})
-
-      action.stdout.setEncoding('utf8')
-      action.stderr.setEncoding('utf8')
-
-      action.stdout.on('data', dataLogger)
-      action.stderr.on('data', errLog)
-
-      action.on('close', exitLog)
-      action.on('error', errLog)
-    }
+    action.do({dir: dir, cmd: cmd, args: args, env: env}).finish()
   })
 }
+
+
+function fetchGit(gitUrl, key) {
+  return {
+    cmd: 'git',
+    args: ['clone', gitUrl, key],
+    env: {}
+  }
+}
+
 
 function createLogger(name) {
   return function(data) {
@@ -104,4 +90,50 @@ function merge(dest, src) {
 
 function getLocalRepo(prefix, repoName) {
   return prefix + '/' + repoName
+}
+
+/* Action */
+function Action(key) {
+  if (!(this instanceof Action))
+    return new Action()
+
+  this.dataLogger = createLogger(key)
+  this.errLog = createErrLogger(key)
+  this.exitLog = createExitLogger(key)
+
+  this.actions = []
+}
+
+Action.prototype.do = function(proc) {
+  this.actions.push({dir: proc.dir, cmd: proc.cmd, args: proc.args, env: proc.env})
+  return this
+}
+
+Action.prototype.finish = function(cb) {
+  var self = this
+
+  run(self.actions.shift())
+
+  function run(task) {
+    if (task.dir)
+      process.chdir(task.dir)
+
+    var action = spawn(task.cmd, task.args, {env: task.env})
+
+    action.stdout.setEncoding('utf8')
+    action.stderr.setEncoding('utf8')
+
+    action.stdout.on('data', self.dataLogger)
+    action.stderr.on('data', self.errLog)
+
+    action.on('close', function(exitCode) {
+      if (exitCode !== 0)
+        return console.log("Bad exit code for ", task, exitCode)
+
+      if (task = self.actions.shift())
+        run(task)
+    })
+
+    action.on('error', self.errLog)
+  }
 }

@@ -23,6 +23,7 @@ Define a json configuration file with the processes that you want running. You c
 - `dir` (optional) The directory you want the process to be launched from
 - `env` (optional) A hash of process specific environment variables you want the process to have
 - `git` (optional) If `dir` is not defined or the directory is nonexistent it will be cloned down locally
+- `postgit` (optional) Command to run on directory after cloning down with `git`
 
 
 ```json
@@ -37,6 +38,10 @@ Define a json configuration file with the processes that you want running. You c
   },
   "app_server": {
     "git": "https://github.com/me/app_server",
+    "postgit": {
+      "command": "npm",
+      "arguments": ["install"]
+    },
     "command": "rails",
     "arguments": ["s"],
     "env": {
