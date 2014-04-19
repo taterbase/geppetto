@@ -39,7 +39,7 @@ Define a json configuration file with the processes that you want running. You c
   "app_server": {
     "git": "https://github.com/me/app_server",
     "postgit": {
-      "command": "npm",
+      "command": "bundle",
       "arguments": ["install"]
     },
     "command": "rails",
