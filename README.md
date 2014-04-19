@@ -52,9 +52,9 @@ Define a json configuration file with the processes that you want running. You c
 ```
 
 ###Common Globals
-There are also top level keys that can be defined to set global commone options:
+There are also top level keys that can be defined to set global common options:
 
-- `_env` Commen environment variables for each service
+- `_env` Common environment variables for each service
 ```json
 {
   "_env": {"LEVEL": "1", "BOSS": "SnapBack"},
