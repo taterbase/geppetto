@@ -1,8 +1,7 @@
 var spawn = require('child_process').spawn
-  , gitJSONPath = './test/git.json'
+  , gitJSONPath = './test/json/git.json'
   , exampleJSONPath = './example.json'
   , fs = require('fs')
-  , originalGitConfig = fs.readFileSync(gitJSONPath)
   , rimraf = require('rimraf')
   , count = 0
   , LIMIT = 2
@@ -77,22 +76,42 @@ describe('Geppetto', function() {
     })
   })
 
+  describe.only('new functionality', function() {
+    it ('should make use of $ENVIRONMENT variables in `dir` field', function(done) {
+      var proc = _spawn('./test/json/dir.json')
+      proc.stdout.on('data', console.log)
+      proc.stderr.on('data', function(data) {
+        done(new Error(data))
+      })
+
+      proc.on('close', done.bind(done, null))
+      proc.on('error', done)
+    })
+
+    it ('should follow install commands', function(done) {
+      var proc = _spawn('./test/json/install.json', done)
+      proc.stdout.on('data', console.log)
+      proc.stderr.on('data', function(data) {
+        done(new Error(data))
+      })
+
+      proc.on('close', console.log)
+      proc.on('error', done)
+    })
+
+  })
+
   afterEach(function(done) {
     rimraf.sync('./cool-ascii-faces')
-    fs.writeFileSync(gitJSONPath, originalGitConfig)
     done()
   })
 
 })
 
-function _spawn(filedir) {
+function _spawn(filedir, cb) {
   var proc = spawn('./bin/geppetto', [filedir])
-
   proc.stdout.setEncoding('utf8')
   proc.stderr.setEncoding('utf8')
-
-  proc.stderr.on('data', function() {
-  })
 
   return proc
 }
