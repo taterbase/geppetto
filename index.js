@@ -37,18 +37,17 @@ function Geppetto() {
       , exitLog = createExitLogger(proc.key)
       , action = new Action(proc.key)
 
-    console.log(dir)
-
     // If the project is not currently on the system
     if (!fs.existsSync(dir)) {
       // Install option overrides git option.
       if(install) {
+        fs.mkdirSync(dir)
         action.do(wrapAction(dir, install))
         if (postinstall)
           action.do(wrapAction(dir, postinstall))
       // If there is a git option, clone down
       } else if (git) {
-        action.do(fetchGit(git, proc.key))
+        action.do(fetchGit(git, dir))
         if (postgit) {
           action.do(wrapAction(dir, postgit))
         }
@@ -62,8 +61,8 @@ function Geppetto() {
 }
 
 
-function fetchGit(gitUrl, key) {
-  return wrapAction(null, {cmd: 'git', args: ['clone', gitUrl, key], env: {}})
+function fetchGit(gitUrl, dir) {
+  return wrapAction(null, {command: 'git', arguments: ['clone', gitUrl, dir]})
 }
 
 function wrapAction(dir, options) {
@@ -156,6 +155,9 @@ Action.prototype.finish = function(cb) {
     action.on('close', function(exitCode) {
       if (exitCode !== 0)
         return console.log("Bad exit code for ", task, exitCode)
+
+      //Reset location to support all dir keys
+      process.chdir(firstDir)
 
       if (task = self.actions.shift())
         run(task)

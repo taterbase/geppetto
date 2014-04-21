@@ -20,16 +20,26 @@ Geppetto makes it simple to script the launch of all your local services with th
 Define a json configuration file with the processes that you want running. You can define a:
 
 - `command` (required) The command being called to launch the process
-- `dir` (optional) The directory you want the process to be launched from
+- `dir` (optional) The directory you want the process to be launched from. `dir` supports $ENVIRONMENT variable expansion.
 - `env` (optional) A hash of process specific environment variables you want the process to have
-- `git` (optional) If `dir` is not defined or the directory is nonexistent it will be cloned down locally
-- `postgit` (optional) Command to run on directory after cloning down with `git`
+- `install` (optional) A sub level of options to perform to install the necessary files (if `dir` is nonexistent)for the process (`install` overrides `git` option)
+- `postinstall` (optional) A sub level of options to perform after installation
+- `git` (optional) If `dir` is nonexistent it will be cloned down locally
+- `postgit` (optional) Sub level options to run on directory after cloning down with `git`
 
 
 ```json
 {
   "api_server": {
-    "dir": "./node-server",
+    "dir": "$PWD/node-server",
+    "install": {
+      "command": "curl",
+      "arguments": ["-O", "https://example.com/api_server"]
+    },
+    "postinstall": {
+      "command": "npm",
+      "arguments": ["install"]
+    },
     "command": "node",
     "arguments": [ "app.js" ],
     "env": {

@@ -1,8 +1,13 @@
 {
   "test-install": {
+    "dir": "./test/test-install",
     "install": {
       "command": "curl",
-      "arguments": ["https://gist.githubusercontent.com/taterbase/11152600/raw/9af12f82bfa9528eb71b6d22f4bebeab0c1f3036/hello-geppetto.txt", ">", "hello-geppetto.txt"]
+      "arguments": ["-O", "https://gist.githubusercontent.com/taterbase/11152600/raw/9af12f82bfa9528eb71b6d22f4bebeab0c1f3036/hello-geppetto.txt"]
+    },
+    "postinstall": {
+      "command": "echo",
+      "arguments": ["post install up in this"]
     },
     "command": "cat",
     "arguments": ["hello-geppetto.txt"]
