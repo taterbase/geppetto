@@ -1,0 +1,10 @@
+{
+  "dir process": {
+    "env": {
+      "MY_FAVORITE_DIR": "./test"
+    },
+    "dir": "$MY_FAVORITE_DIR/json",
+    "command": "echo",
+    "arguments": ["There's always money in the banana stand"]
+  }
+}

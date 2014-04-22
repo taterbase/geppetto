@@ -3,6 +3,7 @@ var fs = require('fs')
   , firstDir = process.cwd()
   , spawn = require('child_process').spawn
   , colors = require('colors')
+  , expandenv = require('expandenv')
 
 module.exports = Geppetto
 
@@ -24,43 +25,54 @@ function Geppetto() {
 
     return proc
   }).forEach(function(proc) {
-    var cmd = proc.command
-      , env = merge((proc.env || {}), defaultEnv)
-      , git = proc.git
+    proc.env = merge((proc.env || {}), defaultEnv)
+
+    var git = proc.git
       , postgit = proc.postgit
-      , dir = proc.dir || (git ? getLocalRepo(firstDir, proc.key) : firstDir)
-      , args = proc.arguments || []
+      , install = proc.install
+      , postinstall = proc.postinstall
+      , dir = getDir(firstDir, proc)
       , dataLogger = createLogger(proc.key)
       , errLog = createErrLogger(proc.key)
       , exitLog = createExitLogger(proc.key)
       , action = new Action(proc.key)
 
-
-    if (git && !fs.existsSync(dir)){
-      action.do(fetchGit(git, proc.key))
-      if (postgit) {
-        action.do({
-          dir: dir
-        , cmd: postgit.command
-        , args: postgit.arguments || []
-        , env: merge((postgit.env || {}), defaultEnv)
-        })
+    // If the project is not currently on the system
+    if (!fs.existsSync(dir)) {
+      // Install option overrides git option.
+      if(install) {
+        fs.mkdirSync(dir)
+        action.do(wrapAction(dir, install))
+        if (postinstall)
+          action.do(wrapAction(dir, postinstall))
+      // If there is a git option, clone down
+      } else if (git) {
+        action.do(fetchGit(git, dir))
+        if (postgit) {
+          action.do(wrapAction(dir, postgit))
+        }
+      } else {
+        throw new Error("Nothing found at: ", dir, "for service: ", proc.key)
       }
-    } 
+    }
 
-    action.do({dir: dir, cmd: cmd, args: args, env: env}).finish()
+    action.do(wrapAction(dir, proc)).finish()
   })
 }
 
 
-function fetchGit(gitUrl, key) {
-  return {
-    cmd: 'git',
-    args: ['clone', gitUrl, key],
-    env: {}
-  }
+function fetchGit(gitUrl, dir) {
+  return wrapAction(null, {command: 'git', arguments: ['clone', gitUrl, dir]})
 }
 
+function wrapAction(dir, options) {
+  return {
+    dir: dir || firstDir,
+    cmd: options.command,
+    args: options.arguments || [],
+    env: options.env || defaultEnv
+  }
+}
 
 function createLogger(name) {
   return function(data) {
@@ -88,8 +100,22 @@ function merge(dest, src) {
   return dest
 }
 
-function getLocalRepo(prefix, repoName) {
-  return prefix + '/' + repoName
+function getDir(firstDir, proc) {
+  var dir = proc.dir
+    , git = proc.git
+    , env = proc.env
+    , install = proc.install
+    , localDir = firstDir + '/' + proc.key
+    , finalDir = ''
+
+  if (dir)
+    finalDir = dir
+  else if (git || install)
+    finalDir = localDir
+  else
+    finalDir = firstDir
+
+  return expandenv(finalDir, env)
 }
 
 /* Action */
@@ -129,6 +155,9 @@ Action.prototype.finish = function(cb) {
     action.on('close', function(exitCode) {
       if (exitCode !== 0)
         return console.log("Bad exit code for ", task, exitCode)
+
+      //Reset location to support all dir keys
+      process.chdir(firstDir)
 
       if (task = self.actions.shift())
         run(task)

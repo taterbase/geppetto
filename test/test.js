@@ -1,8 +1,7 @@
 var spawn = require('child_process').spawn
-  , gitJSONPath = './test/git.json'
+  , gitJSONPath = './test/json/git.json'
   , exampleJSONPath = './example.json'
   , fs = require('fs')
-  , originalGitConfig = fs.readFileSync(gitJSONPath)
   , rimraf = require('rimraf')
   , count = 0
   , LIMIT = 2
@@ -25,7 +24,7 @@ describe('Geppetto', function() {
     })
 
     proc.stderr.on('data', function(data) {
-      console.log(data)
+      done(new Error(data))
     })
 
     proc.on('error', done)
@@ -40,7 +39,7 @@ describe('Geppetto', function() {
     })
 
     proc.on('close', function() {
-      if (fs.existsSync('./cool-ascii-faces/.git'))
+      if (fs.existsSync('./test/cool-ascii-faces/.git'))
         done()
       else
         done(new Error("Clone nonexistent"))
@@ -68,31 +67,51 @@ describe('Geppetto', function() {
   it ('should run postgit command if available', function(done){
     var proc = _spawn(gitJSONPath)
     proc.on('close', function() {
-      setTimeout(function() {
-        if (fs.existsSync('./cool-ascii-faces/node_modules'))
-          done()
-        else
-          done(new Error("postgit not run, node_modules not present"))
-      }, 3000)
+      if (fs.existsSync('./test/cool-ascii-faces/node_modules'))
+        done()
+      else
+        done(new Error("postgit not run, node_modules not present"))
     })
   })
 
+  it ('should make use of $ENVIRONMENT variables in `dir` field', function(done) {
+    var proc = _spawn('./test/json/dir.json')
+    proc.stdout.on('data', console.log)
+    proc.stderr.on('data', function(data) {
+      done(new Error(data))
+    })
+
+    proc.on('close', done.bind(done, null))
+    proc.on('error', done)
+  })
+
+  it ('should follow install commands', function(done) {
+    var proc = _spawn('./test/json/install.json', done)
+    proc.stdout.on('data', function(data) {
+      if (data.match(/Hello geppetto\./))
+        done()
+    })
+
+    proc.stderr.on('data', function(data) {
+      done(new Error(data))
+    })
+
+    proc.on('close', console.log)
+    proc.on('error', done)
+  })
+
   afterEach(function(done) {
-    rimraf.sync('./cool-ascii-faces')
-    fs.writeFileSync(gitJSONPath, originalGitConfig)
+    rimraf.sync('./test/test-install')
+    rimraf.sync('./test/cool-ascii-faces')
     done()
   })
 
 })
 
-function _spawn(filedir) {
+function _spawn(filedir, cb) {
   var proc = spawn('./bin/geppetto', [filedir])
-
   proc.stdout.setEncoding('utf8')
   proc.stderr.setEncoding('utf8')
-
-  proc.stderr.on('data', function() {
-  })
 
   return proc
 }
