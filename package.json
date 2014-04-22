@@ -25,7 +25,8 @@
     "geppetto": "bin/geppetto"
   },
   "dependencies": {
-    "colors": "^0.6.2"
+    "colors": "^0.6.2",
+    "expandenv": "^1.0.0"
   },
   "devDependencies": {
     "mocha": "^1.18.2",

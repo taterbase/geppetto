@@ -3,7 +3,7 @@ var fs = require('fs')
   , firstDir = process.cwd()
   , spawn = require('child_process').spawn
   , colors = require('colors')
-  , expandenv = require('./lib/expandenv')
+  , expandenv = require('expandenv')
 
 module.exports = Geppetto
 

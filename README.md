@@ -73,3 +73,6 @@ There are also top level keys that can be defined to set global common options:
 //game env will be `{LEVEL: 2, BOSS: "SnapBack"}
 ```
 
+___
+
+Made with ⚡️ by [@taterbase](https://twitter.com/taterbase)
