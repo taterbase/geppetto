@@ -1,4 +1,5 @@
 var fs = require('fs')
+  , mkdirp = require('mkdirp')
   , defaultEnv = process.env
   , firstDir = process.cwd()
   , spawn = require('child_process').spawn
@@ -41,7 +42,7 @@ function Geppetto() {
     if (!fs.existsSync(dir)) {
       // Install option overrides git option.
       if(install) {
-        fs.mkdirSync(dir)
+        mkdirp.sync(dir)
         action.do(wrapAction(dir, install))
         if (postinstall)
           action.do(wrapAction(dir, postinstall))
