@@ -85,7 +85,7 @@ describe('Geppetto', function() {
     proc.on('error', done)
   })
 
-  it.only('should follow install commands', function(done) {
+  it ('should follow install commands', function(done) {
     var proc = _spawn('./test/json/install.json', done)
     proc.stdout.on('data', function(data) {
       if (data.match(/Hello geppetto\./))
