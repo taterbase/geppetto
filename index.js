@@ -11,21 +11,26 @@ function Geppetto() {
   var filename = process.argv[2]
     , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
 
+  //If a toplevel _env hash is set, let's add it to the
+  //default env hash to shared by all processes
   if (config._env) {
-    merge(defaultEnv, config._env)
+    defaultEnv = merge(defaultEnv, config._env)
     delete config._env
   }
 
   Object.keys(config).map(function(key) {
+    //Each defined service **needs** a command, reject if none
     if (!config[key].command)
       throw new Error("No command for: " + key)
 
+    //Pull out the service, store the key as well for later
     var proc = config[key]
     proc.key = key
 
     return proc
   }).forEach(function(proc) {
-    proc.env = merge((proc.env || {}), defaultEnv)
+    //Assign the service with collective hash form defaultEnv and its own env
+    proc.env = merge(defaultEnv, (proc.env || {}))
 
     var git = proc.git
       , postgit = proc.postgit
@@ -37,7 +42,7 @@ function Geppetto() {
       , exitLog = createExitLogger(proc.key)
       , action = new Action(proc.key)
 
-    // If the project is not currently on the system
+    // If the project is not currently in the directory
     // run through install or git options
     if (!fs.existsSync(dir)) {
       // Install option overrides the git option if both are declared in the config
@@ -71,6 +76,9 @@ function makeTmpDir(name) {
   return tmpDir
 }
 
+//After installing, we should check if the tmpDir we created
+//was used. There is a potential that the `install` command handled
+//directory creation and the tmpDir might be empty. If so, delete the tmpDir.
 function handleTmpDir(tmpDir, dir) {
   return function() {
     var tmpContents = fs.readdirSync(tmpDir)
@@ -95,8 +103,8 @@ function removeDir(tmpDir) {
   return echo("Cleaning up tmp directory")
 }
 
+//Basic wrapper to echo shell messages
 function echo(message) {
-  console.log("SUP")
   return wrapAction(null, {command: 'echo', arguments: [message]})
 }
 
@@ -131,19 +139,28 @@ function createExitLogger(name) {
   }
 }
 
-function merge(dest, src) {
-  for (var key in src) {
-    if (src.hasOwnProperty(key))
-      dest[key] = src[key]
+/*
+* Merge Function (shallow)
+*
+* Create a new hash with `original` as the prototype, and adding keys from `extra`
+*   - new keys from `extra` will have priority
+*/
+function merge(original, extra) {
+  var result = Object.create(original)
+
+  for (var key in extra) {
+    if (extra.hasOwnProperty(key))
+      result[key] = extra[key]
   }
-  return dest
+
+  return result
 }
 
 function getDir(firstDir, proc) {
   var dir = proc.dir
     , git = proc.git
     , env = proc.env
-    , install = proc.install
+    , install  = proc.install
     , localDir = firstDir + '/' + proc.key
     , finalDir = ''
 
@@ -157,7 +174,14 @@ function getDir(firstDir, proc) {
   return expandenv(finalDir, env)
 }
 
-/* Action */
+/* 
+ * Action
+ *
+ * The foundation of geppetto, all actions are processes spawned
+ * through child_process.spawn. Every action is chainable.
+ *
+ * Each process get's a bespoke logger
+ */
 function Action(key) {
   if (!(this instanceof Action))
     return new Action()
@@ -181,8 +205,9 @@ Action.prototype.finish = function(cb) {
 
   function run(task) {
 
-    //Some times we want lazy values for later, in
-    //these instances it makes sense to pass a function
+    //Sometimes we want lazy values for later (such as checking folder 
+    //                                         contents after actions).
+    //In these instances it makes sense to pass a function
     //to be executed later to get task info
     if (typeof task === 'function')
       task = task()
