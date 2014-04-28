@@ -1,5 +1,4 @@
 var fs = require('fs')
-  , mkdirp = require('mkdirp')
   , defaultEnv = process.env
   , firstDir = process.cwd()
   , spawn = require('child_process').spawn
@@ -39,15 +38,18 @@ function Geppetto() {
       , action = new Action(proc.key)
 
     // If the project is not currently on the system
+    // run through install or git options
     if (!fs.existsSync(dir)) {
-      // Install option overrides git option.
+      // Install option overrides the git option if both are declared in the config
       if(install) {
-        mkdirp.sync(dir)
-        action.do(wrapAction(dir, install))
+        var tmpDir = makeTmpDir(proc.key)
+        action.do(wrapAction(tmpDir, install))
+
         if (postinstall)
-          action.do(wrapAction(dir, postinstall))
-      // If there is a git option, clone down
-      } else if (git) {
+          action.do(wrapAction(tmpDir, postinstall))
+
+        action.do(handleTmpDir(tmpDir, dir))
+      } else if (git) { // If there is a git option, clone down
         action.do(fetchGit(git, dir))
         if (postgit) {
           action.do(wrapAction(dir, postgit))
@@ -58,9 +60,45 @@ function Geppetto() {
     }
 
     action.do(wrapAction(dir, proc)).finish()
+
   })
 }
 
+function makeTmpDir(name) {
+  var tmpDir = firstDir + '/' + name
+  var thing = fs.mkdirSync(tmpDir)
+
+  return tmpDir
+}
+
+function handleTmpDir(tmpDir, dir) {
+  return function() {
+    var tmpContents = fs.readdirSync(tmpDir)
+      , tmpUsed = tmpContents.every(function(content) {
+        return content.match(/(\.|\.\.)/)
+      })
+
+    if (tmpUsed)
+      return moveFiles(tmpDir, dir)
+    else
+      return removeDir(tmpDir)
+  }
+}
+
+function moveFiles(tmpDir, dir) {
+  fs.renameSync(tmpDir, dir)
+  return echo("Moving files from tmp directory to local directory")
+}
+
+function removeDir(tmpDir) {
+  fs.rmdirSync(tmpDir)
+  return echo("Cleaning up tmp directory")
+}
+
+function echo(message) {
+  console.log("SUP")
+  return wrapAction(null, {command: 'echo', arguments: [message]})
+}
 
 function fetchGit(gitUrl, dir) {
   return wrapAction(null, {command: 'git', arguments: ['clone', gitUrl, dir]})
@@ -132,7 +170,7 @@ function Action(key) {
 }
 
 Action.prototype.do = function(proc) {
-  this.actions.push({dir: proc.dir, cmd: proc.cmd, args: proc.args, env: proc.env})
+  this.actions.push(proc)
   return this
 }
 
@@ -142,6 +180,13 @@ Action.prototype.finish = function(cb) {
   run(self.actions.shift())
 
   function run(task) {
+
+    //Some times we want lazy values for later, in
+    //these instances it makes sense to pass a function
+    //to be executed later to get task info
+    if (typeof task === 'function')
+      task = task()
+
     if (task.dir)
       process.chdir(task.dir)
 
