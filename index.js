@@ -1,5 +1,4 @@
 var fs = require('fs')
-  , mkdirp = require('mkdirp')
   , defaultEnv = process.env
   , firstDir = process.cwd()
   , spawn = require('child_process').spawn
@@ -12,21 +11,26 @@ function Geppetto() {
   var filename = process.argv[2]
     , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
 
+  //If a toplevel _env hash is set, let's add it to the
+  //default env hash to shared by all processes
   if (config._env) {
-    merge(defaultEnv, config._env)
+    defaultEnv = merge(defaultEnv, config._env)
     delete config._env
   }
 
   Object.keys(config).map(function(key) {
+    //Each defined service **needs** a command, reject if none
     if (!config[key].command)
       throw new Error("No command for: " + key)
 
+    //Pull out the service, store the key as well for later
     var proc = config[key]
     proc.key = key
 
     return proc
   }).forEach(function(proc) {
-    proc.env = merge((proc.env || {}), defaultEnv)
+    //Assign the service with collective hash form defaultEnv and its own env
+    proc.env = merge(defaultEnv, (proc.env || {}))
 
     var git = proc.git
       , postgit = proc.postgit
@@ -36,18 +40,21 @@ function Geppetto() {
       , dataLogger = createLogger(proc.key)
       , errLog = createErrLogger(proc.key)
       , exitLog = createExitLogger(proc.key)
-      , action = new Action(proc.key)
+      , action = new Action(proc.key, dir)
 
-    // If the project is not currently on the system
+    // If the project is not currently in the directory
+    // run through install or git options
     if (!fs.existsSync(dir)) {
-      // Install option overrides git option.
+      // Install option overrides the git option if both are declared in the config
       if(install) {
-        mkdirp.sync(dir)
-        action.do(wrapAction(dir, install))
+        var tmpDir = makeTmpDir(proc.key)
+        action.do(wrapAction(tmpDir, install))
+        action.do(handleTmpDir(tmpDir, dir))
+
         if (postinstall)
-          action.do(wrapAction(dir, postinstall))
-      // If there is a git option, clone down
-      } else if (git) {
+          action.do(wrapAction(null, postinstall))
+
+      } else if (git) { // If there is a git option, clone down
         action.do(fetchGit(git, dir))
         if (postgit) {
           action.do(wrapAction(dir, postgit))
@@ -57,18 +64,55 @@ function Geppetto() {
       }
     }
 
-    action.do(wrapAction(dir, proc)).finish()
+    action.do(wrapAction(null, proc)).finish()
+
   })
 }
 
+function makeTmpDir(name) {
+  var tmpDir = firstDir + '/' + name
+  var thing = fs.mkdirSync(tmpDir)
+
+  return tmpDir
+}
+
+//After installing, we should check if the tmpDir we created
+//was used. There is a potential that the `install` command handled
+//directory creation and the tmpDir might be empty. If so, delete the tmpDir.
+function handleTmpDir(tmpDir, dir) {
+  return function() {
+    var tmpContents = fs.readdirSync(tmpDir)
+      , tmpUsed = tmpContents.length > 0
+
+    if (tmpUsed)
+      return moveFiles(tmpDir, dir)
+    else
+      return removeDir(tmpDir, dir)
+  }
+}
+
+function moveFiles(tmpDir, dir) {
+  fs.renameSync(tmpDir, dir)
+  return echo("Moving files from tmp directory to local directory", dir)
+}
+
+function removeDir(tmpDir, dir) {
+  fs.rmdirSync(tmpDir)
+  return echo("Cleaning up tmp directory", dir)
+}
+
+//Basic wrapper to echo shell messages
+function echo(message, dir) {
+  return wrapAction(dir, {command: 'echo', arguments: [message]})
+}
 
 function fetchGit(gitUrl, dir) {
-  return wrapAction(null, {command: 'git', arguments: ['clone', gitUrl, dir]})
+  return wrapAction(firstDir, {command: 'git', arguments: ['clone', gitUrl, dir]})
 }
 
 function wrapAction(dir, options) {
   return {
-    dir: dir || firstDir,
+    dir: dir,
     cmd: options.command,
     args: options.arguments || [],
     env: options.env || defaultEnv
@@ -93,19 +137,28 @@ function createExitLogger(name) {
   }
 }
 
-function merge(dest, src) {
-  for (var key in src) {
-    if (src.hasOwnProperty(key))
-      dest[key] = src[key]
+/*
+* Merge Function (shallow)
+*
+* Create a new hash with `original` as the prototype, and adding keys from `extra`
+*   - new keys from `extra` will have priority
+*/
+function merge(original, extra) {
+  var result = Object.create(original)
+
+  for (var key in extra) {
+    if (extra.hasOwnProperty(key))
+      result[key] = extra[key]
   }
-  return dest
+
+  return result
 }
 
 function getDir(firstDir, proc) {
   var dir = proc.dir
     , git = proc.git
     , env = proc.env
-    , install = proc.install
+    , install  = proc.install
     , localDir = firstDir + '/' + proc.key
     , finalDir = ''
 
@@ -119,20 +172,29 @@ function getDir(firstDir, proc) {
   return expandenv(finalDir, env)
 }
 
-/* Action */
-function Action(key) {
+/* 
+ * Action
+ *
+ * The foundation of geppetto, all actions are processes spawned
+ * through child_process.spawn. Every action is chainable.
+ *
+ * Each process get's a bespoke logger
+ */
+function Action(key, dir) {
   if (!(this instanceof Action))
     return new Action()
 
   this.dataLogger = createLogger(key)
-  this.errLog = createErrLogger(key)
-  this.exitLog = createExitLogger(key)
+  this.errLog     = createErrLogger(key)
+  this.exitLog    = createExitLogger(key)
 
   this.actions = []
+  this.dir = dir
+
 }
 
 Action.prototype.do = function(proc) {
-  this.actions.push({dir: proc.dir, cmd: proc.cmd, args: proc.args, env: proc.env})
+  this.actions.push(proc)
   return this
 }
 
@@ -142,8 +204,20 @@ Action.prototype.finish = function(cb) {
   run(self.actions.shift())
 
   function run(task) {
-    if (task.dir)
+
+    //Sometimes we want lazy values for later (such as checking folder 
+    //                                         contents after actions).
+    //In these instances it makes sense to pass a function
+    //to be executed later to get task info
+    if (typeof task === 'function')
+      task = task()
+
+    if (task.dir) {
       process.chdir(task.dir)
+      self.dir = task.dir
+    } else if(self.dir) {
+      process.chdir(self.dir)
+    }
 
     var action = spawn(task.cmd, task.args, {env: task.env})
 
