@@ -40,7 +40,7 @@ function Geppetto() {
       , dataLogger = createLogger(proc.key)
       , errLog = createErrLogger(proc.key)
       , exitLog = createExitLogger(proc.key)
-      , action = new Action(proc.key)
+      , action = new Action(proc.key, dir)
 
     // If the project is not currently in the directory
     // run through install or git options
@@ -49,11 +49,11 @@ function Geppetto() {
       if(install) {
         var tmpDir = makeTmpDir(proc.key)
         action.do(wrapAction(tmpDir, install))
+        action.do(handleTmpDir(tmpDir, dir))
 
         if (postinstall)
-          action.do(wrapAction(tmpDir, postinstall))
+          action.do(wrapAction(null, postinstall))
 
-        action.do(handleTmpDir(tmpDir, dir))
       } else if (git) { // If there is a git option, clone down
         action.do(fetchGit(git, dir))
         if (postgit) {
@@ -64,7 +64,7 @@ function Geppetto() {
       }
     }
 
-    action.do(wrapAction(dir, proc)).finish()
+    action.do(wrapAction(null, proc)).finish()
 
   })
 }
@@ -82,39 +82,37 @@ function makeTmpDir(name) {
 function handleTmpDir(tmpDir, dir) {
   return function() {
     var tmpContents = fs.readdirSync(tmpDir)
-      , tmpUsed = tmpContents.every(function(content) {
-        return content.match(/(\.|\.\.)/)
-      })
+      , tmpUsed = tmpContents.length > 0
 
     if (tmpUsed)
       return moveFiles(tmpDir, dir)
     else
-      return removeDir(tmpDir)
+      return removeDir(tmpDir, dir)
   }
 }
 
 function moveFiles(tmpDir, dir) {
   fs.renameSync(tmpDir, dir)
-  return echo("Moving files from tmp directory to local directory")
+  return echo("Moving files from tmp directory to local directory", dir)
 }
 
-function removeDir(tmpDir) {
+function removeDir(tmpDir, dir) {
   fs.rmdirSync(tmpDir)
-  return echo("Cleaning up tmp directory")
+  return echo("Cleaning up tmp directory", dir)
 }
 
 //Basic wrapper to echo shell messages
-function echo(message) {
-  return wrapAction(null, {command: 'echo', arguments: [message]})
+function echo(message, dir) {
+  return wrapAction(dir, {command: 'echo', arguments: [message]})
 }
 
 function fetchGit(gitUrl, dir) {
-  return wrapAction(null, {command: 'git', arguments: ['clone', gitUrl, dir]})
+  return wrapAction(firstDir, {command: 'git', arguments: ['clone', gitUrl, dir]})
 }
 
 function wrapAction(dir, options) {
   return {
-    dir: dir || firstDir,
+    dir: dir,
     cmd: options.command,
     args: options.arguments || [],
     env: options.env || defaultEnv
@@ -182,15 +180,17 @@ function getDir(firstDir, proc) {
  *
  * Each process get's a bespoke logger
  */
-function Action(key) {
+function Action(key, dir) {
   if (!(this instanceof Action))
     return new Action()
 
   this.dataLogger = createLogger(key)
-  this.errLog = createErrLogger(key)
-  this.exitLog = createExitLogger(key)
+  this.errLog     = createErrLogger(key)
+  this.exitLog    = createExitLogger(key)
 
   this.actions = []
+  this.dir = dir
+
 }
 
 Action.prototype.do = function(proc) {
@@ -212,8 +212,12 @@ Action.prototype.finish = function(cb) {
     if (typeof task === 'function')
       task = task()
 
-    if (task.dir)
+    if (task.dir) {
       process.chdir(task.dir)
+      self.dir = task.dir
+    } else if(self.dir) {
+      process.chdir(self.dir)
+    }
 
     var action = spawn(task.cmd, task.args, {env: task.env})
 
