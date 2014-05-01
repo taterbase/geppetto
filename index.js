@@ -56,6 +56,7 @@ function Geppetto() {
 
       } else if (git) { // If there is a git option, clone down
         action.do(fetchGit(git, dir))
+        action.do(echo("Cloned down git repo", dir))
         if (postgit) {
           action.do(wrapAction(dir, postgit))
         }
