@@ -5,11 +5,15 @@ var fs = require('fs')
   , colors = require('colors')
   , expandenv = require('expandenv')
 
-module.exports = Geppetto
+module.exports = {
+  run: run,
+  install: install
+}
 
-function Geppetto() {
-  var filename = process.argv[2]
-    , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
+function run(file) {
+  file = file || __dirname + './geppetto.json'
+
+  var config = JSON.parse(fs.readFileSync(file, 'utf8'))
 
   //If a toplevel _env hash is set, let's add it to the
   //default env hash to shared by all processes

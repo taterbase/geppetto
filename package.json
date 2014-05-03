@@ -26,7 +26,8 @@
   },
   "dependencies": {
     "colors": "^0.6.2",
-    "expandenv": "^1.0.0"
+    "expandenv": "^1.0.0",
+    "commander": "git+https://github.com/taterbase/commander.js"
   },
   "devDependencies": {
     "mocha": "^1.18.2",

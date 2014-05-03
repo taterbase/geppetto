@@ -1,2 +1,20 @@
 #!/usr/bin/env node
-require('../index')()
+var commander = require('commander')
+  , version = require('../package.json').version
+  , geppetto = require('../index')
+
+commander
+  .usage('[options]')
+  .version(version)
+  .option('-f, --file <file>', 'json file geppetto should use')
+
+commander
+  .command('install [services...]')
+  .description('perform installation of services')
+  .action(function(services) {
+    geppetto.install(services, commander.file)
+  })
+
+commander.parse(process.argv)
+
+geppetto.run(commander.file)
