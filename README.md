@@ -75,6 +75,20 @@ There are also top level keys that can be defined to set global common options:
 //game env will be `{LEVEL: 2, BOSS: "SnapBack"}
 ```
 
+### Experimental Features
+You can "export" the environment variables for an app using a -e or --export-env flag and an optional app name.
+
+`geppetto -e --export-env [app-name] config.json`
+
+If no app is specificed all `_env` values will be printed, if an app is specified its specific `env` variables will be printed as well. You can pipe these into a file and `source` it in bash.
+
+Example output:
+```
+export SOME_ENV=your_value
+export SOME_OTHER_ENV=your_other_value
+```
+
+
 ___
 
 Made with ⚡️ by [@taterbase](https://twitter.com/taterbase)
