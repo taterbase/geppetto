@@ -4,12 +4,54 @@ var fs = require('fs')
   , spawn = require('child_process').spawn
   , colors = require('colors')
   , expandenv = require('expandenv')
+  , commands = {
+    '-e': exportEnv,
+    '--export-env': exportEnv
+  }
 
 module.exports = Geppetto
 
+function exportEnv(args) {
+  var filename
+    , app
+
+  switch(args.length) {
+    case 1:
+      filename = args[0]
+      break
+    case 2:
+      filename = args[1]
+      app = args[0]
+      break
+  }
+
+  var config = JSON.parse(fs.readFileSync(filename, 'utf8'))
+    , env = config._env || {}
+
+  if (app)
+    env = merge(env, config[app].env || {})
+
+  Object.keys(env).forEach(function(key) {
+    process.stdout.write('export ' + key + '=' + env[key] + '\n')
+  })
+}
+
 function Geppetto() {
-  var filename = process.argv[2]
-    , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
+  var args = process.argv.splice(2)
+    , filename = args[0]
+
+  if (args.length !== 1) {
+    filename = args[args.length - 1]
+    var cmd = args.map(function(arg) {
+      return commands[arg]
+    }).filter(function(arg) {
+      return arg
+    })[0]
+
+    return cmd(args.splice(1))
+  }
+
+  var config = JSON.parse(fs.readFileSync(filename, 'utf8'))
 
   //If a toplevel _env hash is set, let's add it to the
   //default env hash to shared by all processes
@@ -145,7 +187,11 @@ function createExitLogger(name) {
 *   - new keys from `extra` will have priority
 */
 function merge(original, extra) {
-  var result = Object.create(original)
+  var result = {}
+
+  Object.keys(original).forEach(function(key) {
+    result[key] = original[key]
+  })
 
   for (var key in extra) {
     if (extra.hasOwnProperty(key))
