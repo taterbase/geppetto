@@ -1,3 +1,4 @@
+![https://travis-ci.org/taterbase/geppetto](https://travis-ci.org/taterbase/geppetto.svg)
 #Geppetto
 
 *SOA local development made easy.*
