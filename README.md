@@ -1,5 +1,4 @@
 [![https://travis-ci.org/taterbase/geppetto](https://travis-ci.org/taterbase/geppetto.svg)](https://travis-ci.org/taterbase/geppetto)
-[![npm version](https://badge.fury.io/js/geppetto.png)](https://badge.fury.io/js/geppetto)
 #Geppetto
 
 *SOA local development made easy.*
