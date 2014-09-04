@@ -4,112 +4,90 @@ var fs = require('fs')
   , spawn = require('child_process').spawn
   , colors = require('colors')
   , expandenv = require('expandenv')
-  , commands = {
-    '-e': exportEnv,
-    '--export-env': exportEnv
-  }
 
-module.exports = Geppetto
+module.exports = geppetto
 
-function exportEnv(args) {
-  var filename
-    , app
 
-  switch(args.length) {
-    case 1:
-      filename = args[0]
-      break
-    case 2:
-      filename = args[1]
-      app = args[0]
-      break
-  }
+function geppetto(file) {
+  var filename = (file && typeof file === 'string') ? file : 'geppetto.json'
+    , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
 
-  var config = JSON.parse(fs.readFileSync(filename, 'utf8'))
-    , env = config._env || {}
-
-  if (app)
-    env = merge(env, config[app].env || {})
-
-  Object.keys(env).forEach(function(key) {
-    process.stdout.write('export ' + key + '=' + env[key] + '\n')
-  })
-}
-
-function Geppetto() {
-  var args = process.argv.splice(2)
-    , filename = args[0]
-
-  if (args.length !== 1) {
-    filename = args[args.length - 1]
-    var cmd = args.map(function(arg) {
-      return commands[arg]
-    }).filter(function(arg) {
-      return arg
-    })[0]
-
-    return cmd(args.splice(1))
-  }
-
-  var config = JSON.parse(fs.readFileSync(filename, 'utf8'))
-
-  //If a toplevel _env hash is set, let's add it to the
-  //default env hash to shared by all processes
   if (config._env) {
     defaultEnv = merge(defaultEnv, config._env)
     delete config._env
   }
 
-  Object.keys(config).map(function(key) {
-    //Each defined service **needs** a command, reject if none
-    if (!config[key].command)
-      throw new Error("No command for: " + key)
+  return {
+    exportEnv: exportEnv,
+    run: run
+  }
 
-    //Pull out the service, store the key as well for later
-    var proc = config[key]
-    proc.key = key
+  function exportEnv(services, verbose) {
+    var env = config._env || {}
 
-    return proc
-  }).forEach(function(proc) {
-    //Assign the service with collective hash form defaultEnv and its own env
-    proc.env = merge(defaultEnv, (proc.env || {}))
-
-    var git = proc.git
-      , postgit = proc.postgit
-      , install = proc.install
-      , postinstall = proc.postinstall
-      , dir = getDir(firstDir, proc)
-      , dataLogger = createLogger(proc.key)
-      , errLog = createErrLogger(proc.key)
-      , exitLog = createExitLogger(proc.key)
-      , action = new Action(proc.key, dir)
-
-    // If the project is not currently in the directory
-    // run through install or git options
-    if (!fs.existsSync(dir)) {
-      // Install option overrides the git option if both are declared in the config
-      if(install) {
-        var tmpDir = makeTmpDir(proc.key)
-        action.do(wrapAction(tmpDir, install))
-        action.do(handleTmpDir(tmpDir, dir))
-
-        if (postinstall)
-          action.do(wrapAction(null, postinstall))
-
-      } else if (git) { // If there is a git option, clone down
-        action.do(fetchGit(git, dir))
-        action.do(echo("Cloned down git repo", dir))
-        if (postgit) {
-          action.do(wrapAction(dir, postgit))
-        }
-      } else {
-        throw new Error("Nothing found at: ", dir, "for service: ", proc.key)
-      }
+    if (services) {
+      services.forEach(function(service) {
+        env = merge(env, service.env || {})
+      })
     }
 
-    action.do(wrapAction(null, proc)).finish()
+    Object.keys(env).forEach(function(key) {
+      process.stdout.write('export ' + key + '=' + env[key] + '\n')
+    })
+  }
 
-  })
+  function run (services, verbose) {
+    //If a toplevel _env hash is set, let's add it to the
+    //default env hash to shared by all processes
+
+    Object.keys(config).map(function(key) {
+      //Each defined service **needs** a command, reject if none
+      if (!config[key].command)
+        throw new Error("No command for: " + key)
+
+      //Pull out the service, store the key as well for later
+      var proc = config[key]
+      proc.key = key
+
+      return proc
+    }).forEach(function(proc) {
+      //Assign the service with collective hash form defaultEnv and its own env
+      proc.env = merge(defaultEnv, (proc.env || {}))
+
+      var git = proc.git
+        , postgit = proc.postgit
+        , install = proc.install
+        , postinstall = proc.postinstall
+        , dir = getDir(firstDir, proc)
+        , action = new Action(proc.key, dir, verbose)
+
+      // If the project is not currently in the directory
+      // run through install or git options
+      if (!fs.existsSync(dir)) {
+        // Install option overrides the git option if both are declared in the config
+        if(install) {
+          var tmpDir = makeTmpDir(proc.key)
+          action.do(wrapAction(tmpDir, install))
+          action.do(handleTmpDir(tmpDir, dir))
+
+          if (postinstall)
+            action.do(wrapAction(null, postinstall))
+
+        } else if (git) { // If there is a git option, clone down
+          action.do(fetchGit(git, dir))
+          action.do(echo("Cloned down git repo", dir))
+          if (postgit) {
+            action.do(wrapAction(dir, postgit))
+          }
+        } else {
+          throw new Error("Nothing found at: ", dir, "for service: ", proc.key)
+        }
+      }
+
+      action.do(wrapAction(null, proc)).finish()
+
+    })
+  }
 }
 
 function makeTmpDir(name) {

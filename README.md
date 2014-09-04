@@ -1,4 +1,5 @@
-![https://travis-ci.org/taterbase/geppetto](https://travis-ci.org/taterbase/geppetto.svg)
+[![https://travis-ci.org/taterbase/geppetto](https://travis-ci.org/taterbase/geppetto.svg)](https://travis-ci.org/taterbase/geppetto)
+[![npm version](https://badge.fury.io/js/geppetto.png)](http://badge.fury.io/js/geppetto)
 #Geppetto
 
 *SOA local development made easy.*
@@ -16,7 +17,8 @@ Geppetto makes it simple to script the launch of all your local services with th
 
 ##Usage
 
-`geppetto config.json`
+If you have a `geppetto.json` in the local directory, you can just run `geppetto`. If you have a file named something other than `geppetto.json` use the `-f` or `--file` flag.
+`geppetto -f config.json`
 
 Define a json configuration file with the processes that you want running. You can define a:
 
@@ -68,7 +70,7 @@ Define a json configuration file with the processes that you want running. You c
 There are also top level keys that can be defined to set global common options:
 
 - `_env` Common environment variables for each service
-```json
+```javascript
 {
   "_env": {"LEVEL": "1", "BOSS": "SnapBack"},
   "game": {"command": "cat", "arguments": ["index.js"], "env": {"LEVEL": "2"}}
@@ -79,7 +81,7 @@ There are also top level keys that can be defined to set global common options:
 ### Experimental Features
 You can "export" the environment variables for an app using a -e or --export-env flag and an optional app name.
 
-`geppetto -e --export-env [app-name] config.json`
+`geppetto -e [app-name]`
 
 If no app is specificed all `_env` values will be printed, if an app is specified its specific `env` variables will be printed as well. You can pipe these into a file and `source` it in bash.
 

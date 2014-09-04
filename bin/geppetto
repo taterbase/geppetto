@@ -1,2 +1,37 @@
 #!/usr/bin/env node
-require('../index')()
+var geppetto = require('../index')
+  , argv = require('minimist')(process.argv.slice(2), {
+  alias: {
+    'e': 'export-env',
+    'r': 'run'
+// COMING SOON (づ｡◕‿‿◕｡)づ
+//    'v': 'verbose',
+//    'c': 'command',
+//    'f': 'file',
+//    'i': 'install',
+//    'u': 'update',
+  }
+})
+
+var file      = argv.f
+  , exportEnv = argv.e
+  , run       = argv.r
+  , verbose = argv.v
+//  , command = argv.c
+//  , install = argv.i
+//  , update  = argv.u
+
+
+geppetto = geppetto(file)
+
+if (exportEnv) {
+  geppetto.exportEnv(exportEnv, verbose)
+//} else if (command) {
+//  geppetto.command(command, verbose)
+//} else if (install) {
+//  geppetto.install(install, verbose)
+//} else if (update) {
+//  geppetto.update(update, verbose)
+} else {
+  geppetto.run(run, verbose)
+}

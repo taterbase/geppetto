@@ -109,7 +109,7 @@ describe('Geppetto', function() {
 })
 
 function _spawn(filedir, cb) {
-  var proc = spawn('./bin/geppetto', [filedir])
+  var proc = spawn('./bin/geppetto', ['-f', filedir])
   proc.stdout.setEncoding('utf8')
   proc.stderr.setEncoding('utf8')
 
