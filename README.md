@@ -18,6 +18,7 @@ Geppetto makes it simple to script the launch of all your local services with th
 ##Usage
 
 If you have a `geppetto.json` in the local directory, you can just run `geppetto`. If you have a file named something other than `geppetto.json` use the `-f` or `--file` flag.
+
 `geppetto -f config.json`
 
 Define a json configuration file with the processes that you want running. You can define a:
