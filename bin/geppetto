@@ -3,11 +3,11 @@ var geppetto = require('../index')
   , argv = require('minimist')(process.argv.slice(2), {
   alias: {
     'e': 'export-env',
+    'f': 'file',
     'r': 'run'
 // COMING SOON (づ｡◕‿‿◕｡)づ
 //    'v': 'verbose',
 //    'c': 'command',
-//    'f': 'file',
 //    'i': 'install',
 //    'u': 'update',
   }
