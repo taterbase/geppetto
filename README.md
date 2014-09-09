@@ -10,8 +10,8 @@ Geppetto makes it simple to script the launch of all your local services with th
 - [Usage](#usage)
 	- [Common Globals](#common-globals)
 	- [Commands](#commands)
-		- [-r --run](#-r--run)
-		- [-e --export-env](#-e--export-env)
+		- [-r --run](#-r---run)
+		- [-e --export-env](#-e---export-env)
 
 ##Installation
 
