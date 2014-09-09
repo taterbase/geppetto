@@ -26,8 +26,9 @@ function geppetto(file) {
     var env = config._env || {}
 
     if (services) {
+      services = Array.isArray(services) ? services : [services]
       services.forEach(function(service) {
-        env = merge(env, service.env || {})
+        env = merge(env, config[service].env || {})
       })
     }
 
