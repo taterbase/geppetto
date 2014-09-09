@@ -1,0 +1,12 @@
+{
+
+  "some process": {
+    "command": "echo",
+    "arguments": ["You should see me"]
+  },
+
+  "some other process": {
+    "command": "echo",
+    "arguments": ["You should not see me"]
+  }
+}
