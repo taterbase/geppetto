@@ -10,9 +10,10 @@ module.exports = geppetto
 function geppetto(file) {
   var filename = (file && typeof file === 'string') ? file : 'geppetto.json'
     , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
+    , _env = config._env
 
-  if (config._env) {
-    defaultEnv = merge(defaultEnv, config._env)
+  if (_env) {
+    defaultEnv = merge(defaultEnv, _env)
     delete config._env
   }
 
@@ -22,9 +23,9 @@ function geppetto(file) {
   }
 
   function exportEnv(services, verbose) {
-    var env = config._env || {}
+    var env = _env || {}
 
-    if (services) {
+    if (services && typeof services !== 'boolean') {
       services = Array.isArray(services) ? services : [services]
       services.forEach(function(service) {
         env = merge(env, config[service].env || {})
@@ -40,7 +41,7 @@ function geppetto(file) {
     //If a toplevel _env hash is set, let's add it to the
     //default env hash to shared by all processes
 
-    if (services)
+    if (services && typeof services !== 'boolean')
       services = Array.isArray(services) ? services : [services]
     else
       services = Object.keys(config)

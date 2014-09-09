@@ -123,7 +123,20 @@ describe('Geppetto', function() {
 
   })
 
-  it('should export environment variables', function(done) {
+  it.only('should export global environment variables', function(done) {
+    var proc = _spawn('./test/json/env.json', 'e', done)
+
+    proc.stdout.on('data', function(data) {
+      if (data.match("export SUP=BAE"))
+        done()
+    })
+
+    proc.stderr.on('data', function(data) {
+      done(new Error(data))
+    })
+  })
+
+  it('should export environment variables for one specific app', function(done) {
     var proc = _spawn('./test/json/dir.json', {e: 'dir process'}, done)
 
     proc.stdout.on('data', function(data) {
@@ -154,8 +167,12 @@ function _spawn(filedir, command, cb) {
   var arguments = ['-f', filedir]
 
   if (command) {
-    var commandKey = Object.keys(command)
-    arguments = arguments.concat(['-' + commandKey, command[commandKey]])
+    if (typeof command === 'object') {
+      var commandKey = Object.keys(command)
+      arguments = arguments.concat(['-' + commandKey, command[commandKey]])
+    } else {
+      arguments.push('-' + command)
+    }
   }
 
   var proc = spawn('./bin/geppetto', arguments)
