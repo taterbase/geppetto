@@ -1,6 +1,6 @@
 {
   "name": "geppetto",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/taterbase/geppetto"
@@ -27,10 +27,12 @@
   "dependencies": {
     "colors": "^0.6.2",
     "expandenv": "^1.0.0",
-    "minimist": "^1.1.0"
+    "minimist": "^1.1.0",
+    "show-help": "^2.0.1"
   },
   "devDependencies": {
     "mocha": "^1.18.2",
-    "rimraf": "^2.2.6"
+    "rimraf": "^2.2.6",
+    "should": "^4.0.4"
   }
 }

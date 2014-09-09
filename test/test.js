@@ -100,6 +100,42 @@ describe('Geppetto', function() {
     proc.on('error', done)
   })
 
+  it ('should only run certain services when specified', function(done) {
+    var proc = _spawn('./test/json/run.json', {r: 'some process'}, done)
+      , foundText = false
+
+    proc.stdout.on('data', function(data) {
+      data.should.not.match("You should not see me")
+      if (data.match("You should see me"))
+        foundText = true
+    })
+
+    proc.stderr.on('data', function(data) {
+      done(new Error(data))
+    })
+
+    proc.on('close', function() {
+      if (foundText)
+        done()
+      else
+        done(new Error("Did not find expected text"))
+    })
+
+  })
+
+  it('should export environment variables', function(done) {
+    var proc = _spawn('./test/json/dir.json', {e: 'dir process'}, done)
+
+    proc.stdout.on('data', function(data) {
+      if (data.match("export MY_FAVORITE_DIR=./test"))
+        done()
+    })
+
+    proc.stderr.on('data', function(data) {
+      done(new Error(data))
+    })
+  })
+
   afterEach(function(done) {
     rimraf.sync('./test/test-install')
     rimraf.sync('./test/cool-ascii-faces')
@@ -108,8 +144,21 @@ describe('Geppetto', function() {
 
 })
 
-function _spawn(filedir, cb) {
-  var proc = spawn('./bin/geppetto', ['-f', filedir])
+function _spawn(filedir, command, cb) {
+
+  if (arguments.length == 2) {
+    cb = command
+    command = undefined
+  }
+
+  var arguments = ['-f', filedir]
+
+  if (command) {
+    var commandKey = Object.keys(command)
+    arguments = arguments.concat(['-' + commandKey, command[commandKey]])
+  }
+
+  var proc = spawn('./bin/geppetto', arguments)
   proc.stdout.setEncoding('utf8')
   proc.stderr.setEncoding('utf8')
 

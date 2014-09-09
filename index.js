@@ -7,7 +7,6 @@ var fs = require('fs')
 
 module.exports = geppetto
 
-
 function geppetto(file) {
   var filename = (file && typeof file === 'string') ? file : 'geppetto.json'
     , config = JSON.parse(fs.readFileSync(filename, 'utf8'))
@@ -26,8 +25,9 @@ function geppetto(file) {
     var env = config._env || {}
 
     if (services) {
+      services = Array.isArray(services) ? services : [services]
       services.forEach(function(service) {
-        env = merge(env, service.env || {})
+        env = merge(env, config[service].env || {})
       })
     }
 
@@ -40,7 +40,12 @@ function geppetto(file) {
     //If a toplevel _env hash is set, let's add it to the
     //default env hash to shared by all processes
 
-    Object.keys(config).map(function(key) {
+    if (services)
+      services = Array.isArray(services) ? services : [services]
+    else
+      services = Object.keys(config)
+
+    services.map(function(key) {
       //Each defined service **needs** a command, reject if none
       if (!config[key].command)
         throw new Error("No command for: " + key)

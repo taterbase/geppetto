@@ -9,6 +9,9 @@ Geppetto makes it simple to script the launch of all your local services with th
 - [Installation](#installation)
 - [Usage](#usage)
 	- [Common Globals](#common-globals)
+	- [Commands](#commands)
+		- [-r --run](#-r---run)
+		- [-e --export-env](#-e---export-env)
 
 ##Installation
 
@@ -78,7 +81,14 @@ There are also top level keys that can be defined to set global common options:
 //game env will be `{LEVEL: 2, BOSS: "SnapBack"}
 ```
 
-### Experimental Features
+###Commands
+
+#### `-r --run`
+You can run select services from a configuration file by passing in the `-r` or `--run` flag specifying which services.
+
+`geppetto -r worker -r webapp -r proxy`
+
+#### `-e --export-env`
 You can "export" the environment variables for an app using a -e or --export-env flag and an optional app name.
 
 `geppetto -e [app-name]`
