@@ -100,6 +100,29 @@ describe('Geppetto', function() {
     proc.on('error', done)
   })
 
+  it ('should only run certain services when specified', function(done) {
+    var proc = _spawn('./test/json/run.json', {r: 'some process'}, done)
+      , foundText = false
+
+    proc.stdout.on('data', function(data) {
+      data.should.not.match("You should not see me")
+      if (data.match("You should see me"))
+        foundText = true
+    })
+
+    proc.stderr.on('data', function(data) {
+      done(new Error(data))
+    })
+
+    proc.on('close', function() {
+      if (foundText)
+        done()
+      else
+        done(new Error("Did not find expected text"))
+    })
+
+  })
+
   it('should export environment variables', function(done) {
     var proc = _spawn('./test/json/dir.json', {e: 'dir process'}, done)
 
