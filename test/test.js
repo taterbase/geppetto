@@ -123,7 +123,7 @@ describe('Geppetto', function() {
 
   })
 
-  it.only('should export global environment variables', function(done) {
+  it('should export global environment variables', function(done) {
     var proc = _spawn('./test/json/env.json', 'e', done)
 
     proc.stdout.on('data', function(data) {
